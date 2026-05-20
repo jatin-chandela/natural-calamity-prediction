@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0 fw-semibold" style="color: #0d2b6e;">Real-Time Risk Dashboard</h4>
+  <span class="badge px-3 py-2" style="background-color: #0d2b6e; font-size: .82rem;">
+    Last updated: {{ last_updated }}
+  </span>
+</div>
+
+<div class="row g-4">
+
+  <!-- Folium risk map -->
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <h6 class="text-muted mb-2 fw-semibold">
+        Risk Map &nbsp;
+        <span class="badge" style="background:#198754;">Low (&lt;30%)</span>
+        <span class="badge" style="background:#fd7e14;">Medium (30&ndash;60%)</span>
+        <span class="badge" style="background:#dc3545;">High (&gt;60%)</span>
+      </h6>
+      <div class="map-wrap">{{ map_html | safe }}</div>
+    </div>
+  </div>
+
+  <!-- Plotly grouped bar chart -->
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <h6 class="text-muted mb-2 fw-semibold">Risk Levels by City</h6>
+      {{ bar_html | safe }}
+    </div>
+  </div>
+
+  <!-- Risk summary cards -->
+  <div class="col-12">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color: #0d2b6e;">Predicted Risk per Node</h6>
+      <div class="row row-cols-2 row-cols-md-5 g-3">
+        {% for city, risks in city_risks.items() %}
+        <div class="col">
+          <div class="card text-center p-3 h-100">
+            <div class="fw-semibold mb-2">{{ city.title() }}</div>
+            <div class="small">
+              Flood:
+              <span class="{{ risk_class(risks.flood_risk) }}">
+                {{ "%.1f%%"|format(risks.flood_risk * 100) }}
+              </span>
+            </div>
+            <div class="small">
+              Cyclone:
+              <span class="{{ risk_class(risks.cyclone_risk) }}">
+                {{ "%.1f%%"|format(risks.cyclone_risk * 100) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest meteorological readings -->
+  <div class="col-12">
+    <div class="card p-3">
+      <h6 class="fw-semibold mb-3" style="color: #0d2b6e;">Latest Meteorological Readings</h6>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="thead-nb">
+            <tr>
+              <th>City</th>
+              <th>Date</th>
+              <th>Rainfall (mm)</th>
+              <th>Temp (&deg;C)</th>
+              <th>Wind (km/h)</th>
+              <th>Humidity (%)</th>
+              <th>Pressure (hPa)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for city, row in readings.items() %}
+            <tr>
+              <td class="fw-semibold">{{ city.title() }}</td>
+              <td>{{ row.date }}</td>
+              <td>{{ row.rainfall_mm }}</td>
+              <td>{{ row.temperature_c }}</td>
+              <td>{{ row.wind_speed_kmh }}</td>
+              <td>{{ row.humidity_percent }}</td>
+              <td>{{ row.pressure_hpa }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

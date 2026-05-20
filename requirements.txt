@@ -1,0 +1,13 @@
+tensorflow
+numpy
+pandas
+matplotlib
+scikit-learn
+keras
+flask
+folium
+plotly
+pymongo
+flwr
+requests
+gunicorn

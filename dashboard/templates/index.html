@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="row justify-content-center mb-5">
+  <div class="col-lg-8 text-center py-5">
+    <h1 class="fw-bold mb-3" style="color: #0d2b6e; font-size: 2.2rem;">
+      Natural Calamity Prediction
+    </h1>
+    <p class="lead text-muted mb-1">
+      A federated deep learning system for real-time flood and cyclone risk forecasting
+      across five Indian coastal cities.
+    </p>
+    <p class="text-muted mb-4" style="font-size: .95rem;">
+      Five distributed weather-station nodes collaboratively train a CNN+LSTM model using
+      Federated Averaging (FedAvg) &mdash; raw sensor data never leaves each node.
+    </p>
+    <a href="/dashboard" class="btn btn-nb btn-lg px-5">View Live Predictions</a>
+  </div>
+</div>
+
+<!-- Node Map -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card p-3">
+      <h5 class="mb-1 fw-semibold" style="color: #0d2b6e;">Federated Node Map</h5>
+      <p class="text-muted small mb-3">
+        Five coastal weather-station nodes participate in federated training.
+        Click a marker for node details.
+      </p>
+      <div class="map-wrap">
+        {{ map_html | safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- About anchor -->
+<div id="about" class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card p-4">
+      <h5 class="fw-semibold mb-4" style="color: #0d2b6e;">About This System</h5>
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <div class="card border p-3 h-100" style="border-color: #d0d9ee !important;">
+            <h6 class="fw-semibold mb-2" style="color: #0d2b6e;">CNN + LSTM Model</h6>
+            <p class="small text-muted mb-0">
+              A hybrid Conv1D + LSTM architecture processes 30-day meteorological windows.
+              The CNN layers extract local patterns; the LSTM layers capture temporal
+              dependencies to produce flood and cyclone probability estimates.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card border p-3 h-100" style="border-color: #d0d9ee !important;">
+            <h6 class="fw-semibold mb-2" style="color: #0d2b6e;">Federated Privacy</h6>
+            <p class="small text-muted mb-0">
+              Raw sensor data (rainfall, temperature, wind speed, humidity, pressure)
+              never leaves each city node. Only model weights are shared with the
+              central aggregator via Federated Averaging (FedAvg).
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card border p-3 h-100" style="border-color: #d0d9ee !important;">
+            <h6 class="fw-semibold mb-2" style="color: #0d2b6e;">Risk Prediction</h6>
+            <p class="small text-muted mb-0">
+              The global model predicts flood and cyclone probability per city,
+              averaged across the 7 most recent 30-day windows. Risk levels are
+              colour-coded: low (&lt;30%), medium (30&ndash;60%), and high (&gt;60%).
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-3 mb-2">
+  {% set stats = [
+    ("5", "Federated Nodes"),
+    ("20", "Training Rounds"),
+    ("2", "Prediction Targets"),
+    ("30-day", "Input Window"),
+  ] %}
+  {% for value, label in stats %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center p-3">
+      <div class="fw-bold fs-4" style="color: #0d2b6e;">{{ value }}</div>
+      <div class="small text-muted">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

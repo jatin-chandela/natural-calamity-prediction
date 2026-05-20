@@ -1,0 +1,38 @@
+# Claude Code config
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment / secrets
+.env
+*.key
+
+# Model artifacts (keep global checkpoints for deployment)
+!models/global/*.h5
+*.keras
+*.ckpt
+*.pb
+
+# SQLite databases (recreated on startup)
+*.db
+
+# Data (keep folder, ignore contents)
+data/raw/*
+!data/raw/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
