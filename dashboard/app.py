@@ -29,7 +29,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from data.fetch_data import FEATURE_COLS, clean, load_imd_csv, normalize  # noqa: E402
-from models.hybrid_model import build_model  # noqa: E402
 from utils.db_manager import init_db, insert_prediction  # noqa: E402
 
 app = Flask(__name__)
@@ -60,6 +59,7 @@ def _round_num(path: Path) -> int:
 
 
 def load_latest_model():
+    from models.hybrid_model import build_model  # noqa: E402
     checkpoints = sorted(MODELS_DIR.glob("global_round_*.weights.h5"), key=_round_num)
     if not checkpoints:
         raise FileNotFoundError(f"No checkpoints found in {MODELS_DIR}")
