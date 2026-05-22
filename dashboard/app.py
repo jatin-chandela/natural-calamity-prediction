@@ -13,30 +13,28 @@ Run from project root:
 
 from __future__ import annotations
 
-import re
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import folium
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from flask import Flask, jsonify, render_template
 
-# project root on sys.path so 'models.*' and 'data.*' resolve
+# project root on sys.path so 'utils.*' resolves
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from data.fetch_data import FEATURE_COLS, clean, load_imd_csv, normalize  # noqa: E402
 from utils.db_manager import init_db, insert_prediction  # noqa: E402
 
 app = Flask(__name__)
 
 # ── static config ─────────────────────────────────────────────────────────────
-LOG_PATH   = ROOT / "logs" / "training_log.csv"
-MODELS_DIR = ROOT / "models" / "global"
-DB_PATH    = ROOT / "logs" / "calamity_predictions.db"
+LOG_PATH         = ROOT / "logs" / "training_log.csv"
+PREDICTIONS_PATH = ROOT / "dashboard" / "predictions.json"
+DB_PATH          = ROOT / "logs" / "calamity_predictions.db"
 init_db(DB_PATH)
 
 CITIES: dict[str, dict] = {
@@ -47,39 +45,16 @@ CITIES: dict[str, dict] = {
     "visakhapatnam": {"lat": 17.6868, "lon": 83.2185, "csv": ROOT / "clients" / "node_visakhapatnam.csv"},
 }
 
-WINDOW = 30  # days per prediction sequence (matches model INPUT_SHAPE)
-N_DAYS = 7   # number of recent sliding windows to average
-
-
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def _round_num(path: Path) -> int:
-    m = re.search(r"global_round_(\d+)", path.stem)
-    return int(m.group(1)) if m else 0
+def load_cached_predictions() -> dict:
+    """Read precomputed predictions from predictions.json.
 
-
-def load_latest_model():
-    from models.hybrid_model import build_model  # noqa: E402
-    checkpoints = sorted(MODELS_DIR.glob("global_round_*.weights.h5"), key=_round_num)
-    if not checkpoints:
-        raise FileNotFoundError(f"No checkpoints found in {MODELS_DIR}")
-    model = build_model()
-    model.load_weights(str(checkpoints[-1]))
-    return model
-
-
-def predict_city(model, city: str) -> tuple[float, float, float]:
-    """Return (flood_risk, cyclone_risk, confidence_score) over the last N_DAYS windows."""
-    df = load_imd_csv(CITIES[city]["csv"])
-    df = clean(df)
-    df, _ = normalize(df)
-    # WINDOW + N_DAYS - 1 rows produces exactly N_DAYS sequences of length WINDOW
-    tail = df.tail(WINDOW + N_DAYS - 1).reset_index(drop=True)
-    features = tail[FEATURE_COLS].values.astype("float32")
-    seqs = np.stack([features[i : i + WINDOW] for i in range(N_DAYS)])  # (7, 30, 5)
-    probs = model.predict(seqs, verbose=0)                               # (7, 2)
-    confidence = float(1.0 - (probs[:, 0].std() + probs[:, 1].std()) / 2)
-    return float(probs[:, 0].mean()), float(probs[:, 1].mean()), confidence
+    The model runs offline (TensorFlow is not installed on the server);
+    regenerate this file with dashboard/precompute_predictions.py.
+    """
+    with open(PREDICTIONS_PATH, encoding="utf-8") as fh:
+        return json.load(fh)
 
 
 def risk_color(v: float) -> str:
@@ -153,41 +128,28 @@ def index():
 @app.route("/predict")
 def predict():
     try:
-        model = load_latest_model()
-    except FileNotFoundError as exc:
-        return jsonify({"error": str(exc)}), 500
+        data = load_cached_predictions()
+    except FileNotFoundError:
+        return jsonify({"error": "predictions.json not found - run dashboard/precompute_predictions.py"}), 500
 
-    checkpoints = sorted(MODELS_DIR.glob("global_round_*.weights.h5"), key=_round_num)
-    fed_round = _round_num(checkpoints[-1]) if checkpoints else 0
-
-    results: dict[str, dict] = {}
-    for city in CITIES:
-        fr, cr, conf = predict_city(model, city)
-        insert_prediction(city, round(fr, 4), round(cr, 4), round(conf, 4), fed_round, DB_PATH)
-        results[city] = {
-            "flood_risk":   round(fr, 4),
-            "cyclone_risk": round(cr, 4),
-        }
-    return jsonify(results)
+    city_risks = data["city_risks"]
+    fed_round = data.get("fed_round", 0)
+    for city, risk in city_risks.items():
+        try:
+            insert_prediction(city, risk["flood_risk"], risk["cyclone_risk"], 0.0, fed_round, DB_PATH)
+        except Exception:
+            pass
+    return jsonify(city_risks)
 
 
 @app.route("/dashboard")
 def dashboard():
     try:
-        model = load_latest_model()
+        data = load_cached_predictions()
     except Exception as exc:
         return render_template("error.html", message=str(exc)), 500
 
-    city_risks: dict[str, dict] = {}
-    try:
-        for city in CITIES:
-            fr, cr, _conf = predict_city(model, city)
-            city_risks[city] = {
-                "flood_risk":   round(fr, 4),
-                "cyclone_risk": round(cr, 4),
-            }
-    except Exception as exc:
-        return render_template("error.html", message=str(exc)), 500
+    city_risks = data["city_risks"]
 
     map_html = build_map(city_risks)
 
@@ -217,7 +179,7 @@ def dashboard():
     bar_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
 
     readings     = latest_readings()
-    last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    last_updated = data.get("generated_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     return render_template(
         "dashboard.html",
