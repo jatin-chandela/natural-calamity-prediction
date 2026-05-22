@@ -1,0 +1,26 @@
+{
+  "fed_round": 20,
+  "generated_at": "2026-05-22 16:29:56",
+  "city_risks": {
+    "mumbai": {
+      "flood_risk": 0.0011,
+      "cyclone_risk": 0.004
+    },
+    "chennai": {
+      "flood_risk": 0.0458,
+      "cyclone_risk": 0.0062
+    },
+    "kolkata": {
+      "flood_risk": 0.0007,
+      "cyclone_risk": 0.0031
+    },
+    "bhubaneswar": {
+      "flood_risk": 0.0007,
+      "cyclone_risk": 0.0031
+    },
+    "visakhapatnam": {
+      "flood_risk": 0.0018,
+      "cyclone_risk": 0.0053
+    }
+  }
+}
