@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-7">
+    <div class="card p-4 text-center">
+      <h3 class="mb-3 text-danger">Something went wrong</h3>
+      <p class="text-muted mb-3">The prediction service encountered an error. Please try again in a moment.</p>
+      {% if message %}
+      <pre class="text-start bg-light border rounded p-3" style="font-size:.82rem;white-space:pre-wrap;word-break:break-word;">{{ message }}</pre>
+      {% endif %}
+      <a href="/" class="btn btn-nb mt-3 px-4">Back to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

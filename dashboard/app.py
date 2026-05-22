@@ -173,15 +173,21 @@ def predict():
 
 @app.route("/dashboard")
 def dashboard():
-    model = load_latest_model()
+    try:
+        model = load_latest_model()
+    except Exception as exc:
+        return render_template("error.html", message=str(exc)), 500
 
     city_risks: dict[str, dict] = {}
-    for city in CITIES:
-        fr, cr, _conf = predict_city(model, city)
-        city_risks[city] = {
-            "flood_risk":   round(fr, 4),
-            "cyclone_risk": round(cr, 4),
-        }
+    try:
+        for city in CITIES:
+            fr, cr, _conf = predict_city(model, city)
+            city_risks[city] = {
+                "flood_risk":   round(fr, 4),
+                "cyclone_risk": round(cr, 4),
+            }
+    except Exception as exc:
+        return render_template("error.html", message=str(exc)), 500
 
     map_html = build_map(city_risks)
 
